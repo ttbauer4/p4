@@ -1,5 +1,9 @@
 #define STRIDE 1<<5
 
+int global_tickets;
+int global_stride;
+int global_pass;
+
 // Per-CPU state
 struct cpu {
   uchar apicid;                // Local APIC ID

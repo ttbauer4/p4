@@ -381,6 +381,13 @@ sched(void)
   mycpu()->intena = intena;
 }
 
+// increment `pass` by `stride` every time the process runs
+void
+incpass(void)
+{
+  myproc()->pass+=myproc()->stride;
+}
+
 // Give up the CPU for one scheduling round.
 void
 yield(void)

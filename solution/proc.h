@@ -1,4 +1,4 @@
-#define STRIDE 1<<5
+#define STRIDE1 1<<10
 
 int global_tickets;
 int global_stride;

@@ -112,6 +112,10 @@ found:
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
 
+  p->tickets = 8;
+  p->stride = STRIDE1 / p->tickets;
+  p->pass = 0;
+
   return p;
 }
 
@@ -379,6 +383,7 @@ sched(void)
   intena = mycpu()->intena;
   swtch(&p->context, mycpu()->scheduler);
   mycpu()->intena = intena;
+  incpass();
 }
 
 // increment `pass` by `stride` every time the process runs

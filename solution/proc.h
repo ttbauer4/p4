@@ -1,3 +1,5 @@
+#define STRIDE 1<<5
+
 // Per-CPU state
 struct cpu {
   uchar apicid;                // Local APIC ID
@@ -49,6 +51,9 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  int tickets; 
+  int stride;
+  int pass;
 };
 
 // Process memory is laid out contiguously, low addresses first:

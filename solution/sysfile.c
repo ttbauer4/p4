@@ -61,6 +61,10 @@ sys_settickets(void)
   int n;
   struct proc *curproc = myproc();
 
+  if(argint(0, &n) < 0) {
+    return -1;
+  }
+
   // If a process sets a value lower than 1, we set the 
   // number of tickets to default = 8. If a process sets
   // a value higher than 1<<5, we set the number of
@@ -71,7 +75,10 @@ sys_settickets(void)
     n = 8;
   }
   curproc->tickets = n;
-  
+  curproc->remain = curproc->remain*((STRIDE1/n)/curproc->stride);
+  curproc->stride = STRIDE1/n;
+  curproc->pass += curproc->stride;
+
   return 0;
 }
 
@@ -80,6 +87,10 @@ int
 sys_getpinfo(void)
 {
   struct pstat *procstats;
+
+  if(argptr(0, &procstats, sizeof(struct pstat)) < 0) {
+    return -1;
+  }
 
   for(int i = 0; i < NPROC; i++) {
     if (ptable.proc[i].state == UNUSED) {

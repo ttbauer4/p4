@@ -581,7 +581,7 @@ void update_global_values(){
 
 void STRIDE(){
 
-struct proc *p = \;
+struct proc *p = NULL;
 struct proc *p_chosen;
 int lowest_pass_value = INT_MAX;
 struct cpu *c = mycpu();

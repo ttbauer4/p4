@@ -6,6 +6,8 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include <stdio.h>
+#include <limits.h>
 
 struct {
   struct spinlock lock;
@@ -331,6 +333,9 @@ scheduler(void)
   struct cpu *c = mycpu();
   c->proc = 0;
   
+  #ifdef STRIDE 
+  STRIDE();
+  #elif defined(RR)
   for(;;){
     // Enable interrupts on this processor.
     sti();
@@ -358,6 +363,12 @@ scheduler(void)
     release(&ptable.lock);
 
   }
+  #else
+
+  //error
+  #endif
+
+
 }
 
 // Enter scheduler.  Must hold only ptable.lock
@@ -370,6 +381,7 @@ scheduler(void)
 void
 sched(void)
 {
+  
   int intena;
   struct proc *p = myproc();
 
@@ -400,6 +412,7 @@ yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
   update_global_values();
+  myproc()->totalruntime++;
  
   myproc()->state = RUNNABLE;
   sched();
@@ -568,3 +581,50 @@ void update_global_values(){
   global_stride = STRIDE1/global_tickets;
   global_pass = global_pass + global_stride;
 }
+
+
+void STRIDE(){
+
+struct proc *p;
+struct proc *p_chosen;
+int lowest_pass_value = INT_MAX;
+struct cpu *c = mycpu();
+c->proc = 0;
+
+
+ // Enable interrupts on this processor.
+    sti();
+
+    // Loop over process table looking for process to run.
+    acquire(&ptable.lock);
+    for(p_chosen = ptable.proc; p_chosen < &ptable.proc[NPROC]; p_chosen++){
+      if(p_chosen->state != RUNNABLE && p_chosen->pass <= lowest_pass_value){
+        if(lowest_pass_value == p_chosen->pass){
+          if(p_chosen->totalruntime < p->totalruntime ){
+            p = p_chosen;
+          }else if(p_chosen->totalruntime  == p->totalruntime && p_chosen->pid < p->pid){
+            p = p_chosen;
+          }
+        }
+        lowest_pass_value = p_chosen->pass;
+        p = p_chosen;
+      }
+        
+
+      // Switch to chosen process.  It is the process's job
+      // to release ptable.lock and then reacquire it
+      // before jumping back to us.
+      c->proc = p;
+      switchuvm(p);
+      p->state = RUNNING;
+
+      swtch(&(c->scheduler), p->context);
+      switchkvm();
+
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+      c->proc = 0;
+    }
+    release(&ptable.lock);
+
+  }

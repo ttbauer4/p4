@@ -115,7 +115,8 @@ found:
   p->tickets = 8;
   p->stride = STRIDE1 / p->tickets;
   p->pass = 0;
-
+  p->remain = 0;
+  p->totalruntime= 0;
   return p;
 }
 
@@ -398,6 +399,8 @@ void
 yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
+  update_global_values();
+ 
   myproc()->state = RUNNABLE;
   sched();
   release(&ptable.lock);
@@ -448,6 +451,7 @@ sleep(void *chan, struct spinlock *lk)
     release(lk);
   }
   // Go to sleep.
+  p->remain = p->pass - global_pass; // Added Calculation for remain
   p->chan = chan;
   p->state = SLEEPING;
 
@@ -473,6 +477,7 @@ wakeup1(void *chan)
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if(p->state == SLEEPING && p->chan == chan)
+      p->pass = global_pass + p->remain; // Calculate pass value to be ahead of global pass by remain.
       p->state = RUNNABLE;
 }
 
@@ -543,4 +548,23 @@ procdump(void)
     }
     cprintf("\n");
   }
+}
+
+
+
+void update_global_ticket(){
+  int tickets = 0;
+struct proc *p;
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state == RUNNABLE){
+        tickets += p->tickets;
+      }
+  }
+      global_tickets = tickets;
+}
+
+void update_global_values(){
+  update_global_ticket();
+  global_stride = STRIDE1/global_tickets;
+  global_pass = global_pass + global_stride;
 }

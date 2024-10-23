@@ -55,7 +55,21 @@ fdalloc(struct file *f)
 int
 sys_settickets(void)
 {
-  return -1;
+  int n;
+  struct proc *curproc = myproc();
+
+  begin_op();
+
+  if(n > 1<<5) {
+    n = 1<<5;
+  } else if (n < 1) {
+    n = 1;
+  }
+  curproc->tickets = n;
+  
+  end_op();
+
+  return 0;
 }
 
 int

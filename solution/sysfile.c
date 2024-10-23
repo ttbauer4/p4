@@ -53,6 +53,18 @@ fdalloc(struct file *f)
 }
 
 int
+sys_settickets(void)
+{
+  return -1;
+}
+
+int
+sys_getpinfo(void)
+{
+  return -1;
+}
+
+int
 sys_dup(void)
 {
   struct file *f;

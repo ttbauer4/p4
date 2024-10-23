@@ -405,11 +405,6 @@ void
 yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
-  update_global_values();
-  myproc()->totalruntime++;
-  myproc()->pass+=myproc()->stride;
- 
-  myproc()->state = RUNNABLE;
   sched();
   release(&ptable.lock);
 }

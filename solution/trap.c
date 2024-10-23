@@ -50,6 +50,12 @@ trap(struct trapframe *tf)
   case T_IRQ0 + IRQ_TIMER:
     if(cpuid() == 0){
       acquire(&tickslock);
+      update_global_values();
+      myproc()->totalruntime++;
+      myproc()->pass+=myproc()->stride;
+ 
+      myproc()->state = RUNNABLE;
+
       ticks++;
       wakeup(&ticks);
       release(&tickslock);

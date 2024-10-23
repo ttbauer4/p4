@@ -67,3 +67,7 @@ struct proc {
 //   original data and bss
 //   fixed-size stack
 //   expandable heap
+
+void update_global_values();
+void STRIDE();
+void update_global_ticket();

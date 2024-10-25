@@ -381,7 +381,6 @@ scheduler(void)
 void
 sched(void)
 {
-  
   int intena;
   struct proc *p = myproc();
 
@@ -397,8 +396,6 @@ sched(void)
   swtch(&p->context, mycpu()->scheduler);
   mycpu()->intena = intena;
 }
-
-
 
 // Give up the CPU for one scheduling round.
 void
@@ -554,17 +551,15 @@ procdump(void)
   }
 }
 
-
-
 void update_global_ticket(){
   int tickets = 0;
-struct proc *p;
+  struct proc *p;
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state == RUNNABLE){
-        tickets += p->tickets;
-      }
+    if(p->state == RUNNABLE){
+      tickets += p->tickets;
+    }
   }
-      global_tickets = tickets;
+  global_tickets = tickets;
 }
 
 void update_global_values(){
@@ -573,39 +568,37 @@ void update_global_values(){
   global_pass = global_pass + global_stride;
 }
 
-
 void STRIDE(){
+  struct proc *p = NULL;
+  struct proc *p_chosen;
+  int lowest_pass_value = INT_MAX;
+  struct cpu *c = mycpu();
+  c->proc = 0;
 
-struct proc *p = NULL;
-struct proc *p_chosen;
-int lowest_pass_value = INT_MAX;
-struct cpu *c = mycpu();
-c->proc = 0;
-
-for(;;){
- // Enable interrupts on this processor.
+  for(;;){
+    // Enable interrupts on this processor.
     sti();
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
     for(p_chosen = ptable.proc; p_chosen < &ptable.proc[NPROC]; p_chosen++){
-    if(p_chosen->state == RUNNABLE && p_chosen->pass <= lowest_pass_value){
+      if(p_chosen->state == RUNNABLE && p_chosen->pass <= lowest_pass_value){
         // Update lowest_pass_value
         if (p_chosen->pass < lowest_pass_value) {
-            lowest_pass_value = p_chosen->pass; // Update the lowest pass value
-            p = p_chosen; // Assign the current process as the best candidate
+          lowest_pass_value = p_chosen->pass; // Update the lowest pass value
+          p = p_chosen; // Assign the current process as the best candidate
         } else if (p_chosen->totalruntime < p->totalruntime) {
-            p = p_chosen; // Update based on total runtime
+          p = p_chosen; // Update based on total runtime
         } else if (p_chosen->totalruntime == p->totalruntime && p_chosen->pid < p->pid) {
-            p = p_chosen; // Update based on pid
+          p = p_chosen; // Update based on pid
         }
+      }
     }
-} // why loop ask ta ....................................................................................................
 
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
-      if(p!=NULL){
+    // Switch to chosen process.  It is the process's job
+    // to release ptable.lock and then reacquire it
+    // before jumping back to us.
+    if(p!=NULL){
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
@@ -616,8 +609,8 @@ for(;;){
       // Process is done running for now.
       // It should have changed its p->state before coming back.
       c->proc = 0;
-    
-    release(&ptable.lock);
-      }
+      
+      release(&ptable.lock);
+    }
   }
 }

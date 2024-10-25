@@ -77,7 +77,7 @@ sys_settickets(void)
   curproc->tickets = n;
   curproc->remain = curproc->remain*((STRIDE1/n)/curproc->stride);
   curproc->stride = STRIDE1/n;
-  curproc->pass += curproc->stride;
+  curproc->pass += curproc->stride + global_pass;
 
   return 0;
 }

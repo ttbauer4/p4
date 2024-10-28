@@ -1,0 +1,1 @@
+cd ../solution; ../tests/run-xv6-command.exp SCHEDULER=STRIDE CPUS=1 Makefile.test test_3 | grep -E 'P4_TESTER'; cd ../tests

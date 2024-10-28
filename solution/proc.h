@@ -1,8 +1,8 @@
 #define STRIDE1 1<<10
 
-int global_tickets;
-int global_stride;
-int global_pass;
+extern int global_tickets;
+extern int global_stride;
+extern int global_pass;
 
 // Per-CPU state
 struct cpu {
@@ -71,3 +71,5 @@ struct proc {
 void update_global_values();
 void STRIDE();
 void update_global_ticket();
+int getpinfo();
+int settickets();

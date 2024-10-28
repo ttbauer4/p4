@@ -89,3 +89,17 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+// Allow a process to set its own number of tickets.
+int
+sys_settickets(void)
+{
+  return settickets();
+}
+
+// Retrieve scheduling information for all processes.
+int
+sys_getpinfo(void)
+{
+  return getpinfo();
+}

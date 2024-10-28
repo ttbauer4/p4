@@ -15,8 +15,6 @@
 #include "sleeplock.h"
 #include "file.h"
 #include "fcntl.h"
-#include "pstat.h"
-#include "proc.c"
 
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
@@ -52,60 +50,6 @@ fdalloc(struct file *f)
     }
   }
   return -1;
-}
-
-// Allow a process to set its own number of tickets.
-int
-sys_settickets(void)
-{
-  int n;
-  struct proc *curproc = myproc();
-
-  if(argint(0, &n) < 0) {
-    return -1;
-  }
-
-  // If a process sets a value lower than 1, we set the 
-  // number of tickets to default = 8. If a process sets
-  // a value higher than 1<<5, we set the number of
-  // tickets to 1<<5.
-  if(n > 1<<5) {
-    n = 1<<5;
-  } else if (n < 1) {
-    n = 8;
-  }
-  curproc->tickets = n;
-  curproc->remain = curproc->remain*((STRIDE1/n)/curproc->stride);
-  curproc->stride = STRIDE1/n;
-  curproc->pass += curproc->stride + global_pass;
-
-  return 0;
-}
-
-// Retrieve scheduling information for all processes.
-int
-sys_getpinfo(void)
-{
-  struct pstat *procstats;
-
-  if(argptr(0, &procstats, sizeof(struct pstat)) < 0) {
-    return -1;
-  }
-
-  for(int i = 0; i < NPROC; i++) {
-    if (ptable.proc[i].state == UNUSED) {
-      procstats->inuse[i] = 0;
-    } else {
-      procstats->inuse[i] = 1;
-    }
-    procstats->tickets[i] = ptable.proc[i].tickets;
-    procstats->pid[i] = ptable.proc[i].pid;
-    procstats->pass[i] = ptable.proc[i].pass;
-    procstats->remain[i] = ptable.proc[i].remain;
-    procstats->rtime[i] = ptable.proc[i].totalruntime;
-  }
-
-  return 0;
 }
 
 int

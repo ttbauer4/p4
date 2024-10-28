@@ -1,3 +1,4 @@
+struct pstat;
 struct stat;
 struct rtcdate;
 

@@ -120,8 +120,8 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
-int             sys_getpinfo(void);
-int             sys_settickets(void);
+int             getpinfo(void);
+int             settickets(void);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

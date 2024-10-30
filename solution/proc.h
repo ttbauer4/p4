@@ -69,7 +69,7 @@ struct proc {
 //   expandable heap
 
 void update_global_values();
-void STRIDE();
+void stride_scheduler(void) __attribute__((noreturn));
 void update_global_ticket();
 //int getpinfo();
 //int settickets();

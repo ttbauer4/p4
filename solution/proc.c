@@ -334,18 +334,16 @@ wait(void)
 void
 scheduler(void)
 {
+  #ifdef STRIDE 
+  stride_scheduler();
+  #elif defined(RR)
   struct proc *p;
   struct cpu *c = mycpu();
   c->proc = 0;
   
-  #ifdef STRIDE 
-  stride_scheduler();
-  #elif defined(RR)
   for(;;){
-    
     // Enable interrupts on this processor.
     sti();
-    cprintf("RR\n");
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
     
@@ -357,10 +355,13 @@ scheduler(void)
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
       c->proc = p;
+
+      if (c->proc) {
+        //cprintf("process running: %s\n", c->proc->name);
+      }
       
       switchuvm(p);
       
-
       p->state = RUNNING;
 
       swtch(&(c->scheduler), p->context);
@@ -371,15 +372,9 @@ scheduler(void)
       c->proc = 0;
     }
     release(&ptable.lock);
-    
-
   }
-  #else
-
   //error
   #endif
-
-
 }
 
 // Enter scheduler.  Must hold only ptable.lock
@@ -567,7 +562,7 @@ void update_global_ticket(){
   int tickets = 0;
   struct proc *p;
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    if(p->state == RUNNABLE){
+    if(p->state == RUNNABLE || p->state == RUNNING){
       tickets += p->tickets;
     }
   }

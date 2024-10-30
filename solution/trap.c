@@ -50,12 +50,16 @@ trap(struct trapframe *tf)
   case T_IRQ0 + IRQ_TIMER:
     if(cpuid() == 0){
       acquire(&tickslock);
-
       ticks++;
       wakeup(&ticks);
       release(&tickslock);
     }
     lapiceoi();
+    if(myproc()){
+      update_global_values();
+      myproc()->totalruntime++;
+      myproc()->pass+=myproc()->stride;
+    }
     break;
   case T_IRQ0 + IRQ_IDE:
     ideintr();
@@ -105,9 +109,6 @@ trap(struct trapframe *tf)
   // If interrupts were on while locks held, would need to check nlock.
   if(myproc() && myproc()->state == RUNNING &&
      tf->trapno == T_IRQ0+IRQ_TIMER) {
-    update_global_values();
-    myproc()->totalruntime++;
-    myproc()->pass+=myproc()->stride;
     yield();
   }
 

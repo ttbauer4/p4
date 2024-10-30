@@ -71,5 +71,5 @@ struct proc {
 void update_global_values();
 void STRIDE();
 void update_global_ticket();
-int getpinfo();
-int settickets();
+//int getpinfo();
+//int settickets();

@@ -1,5 +1,6 @@
 #include "types.h"
 #include "x86.h"
+#include "pstat.h"
 #include "defs.h"
 #include "date.h"
 #include "param.h"
@@ -94,12 +95,21 @@ sys_uptime(void)
 int
 sys_settickets(void)
 {
-  return settickets();
+  int n;
+   if(argint(0, &n) < 0) {
+    return -1;
+  }
+  return settickets(n);
 }
 
 // Retrieve scheduling information for all processes.
 int
 sys_getpinfo(void)
 {
-  return getpinfo();
+   struct pstat *procstats;
+
+  if(argptr(0, (char**)&procstats, sizeof(struct pstat)) < 0) {
+    return -1;
+  }
+  return getpinfo(procstats);
 }

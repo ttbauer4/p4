@@ -95,6 +95,11 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  p->tickets = 8;
+  p->stride = STRIDE1 / p->tickets;
+  p->pass = 0;
+  p->remain = 0;
+  p->totalruntime= 0;
 
   release(&ptable.lock);
 
@@ -119,11 +124,6 @@ found:
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
 
-  p->tickets = 8;
-  p->stride = STRIDE1 / p->tickets;
-  p->pass = 0;
-  p->remain = 0;
-  p->totalruntime= 0;
   return p;
 }
 
@@ -339,7 +339,7 @@ scheduler(void)
   c->proc = 0;
   
   #ifdef STRIDE 
-  STRIDE();
+  stride_scheduler();
   #elif defined(RR)
   for(;;){
     // Enable interrupts on this processor.
@@ -407,6 +407,7 @@ void
 yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
+  myproc()->state = RUNNABLE;
   sched();
   release(&ptable.lock);
 }
@@ -573,7 +574,7 @@ void update_global_values(){
   global_pass = global_pass + global_stride;
 }
 
-void STRIDE(){
+void stride_scheduler(){
   struct proc *p = NULL;
   struct proc *p_chosen;
   int lowest_pass_value = INT_MAX;

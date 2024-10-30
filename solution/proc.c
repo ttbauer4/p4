@@ -342,11 +342,13 @@ scheduler(void)
   STRIDE();
   #elif defined(RR)
   for(;;){
+    
     // Enable interrupts on this processor.
     sti();
-
+    cprintf("RR\n");
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
+    
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
@@ -355,7 +357,10 @@ scheduler(void)
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
       c->proc = p;
+      
       switchuvm(p);
+      
+
       p->state = RUNNING;
 
       swtch(&(c->scheduler), p->context);
@@ -366,6 +371,7 @@ scheduler(void)
       c->proc = 0;
     }
     release(&ptable.lock);
+    
 
   }
   #else
@@ -622,14 +628,13 @@ void STRIDE(){
 
 // Allow a process to set its own number of tickets.
 int
-settickets(void)
+settickets(int n)
 {
-  int n;
   struct proc *curproc = myproc();
 
-  if(argint(0, &n) < 0) {
-    return -1;
-  }
+  // if(argint(0, &n) < 0) {
+  //   return -1;
+  // }
 
   // If a process sets a value lower than 1, we set the 
   // number of tickets to default = 8. If a process sets
@@ -650,13 +655,13 @@ settickets(void)
 
 // Retrieve scheduling information for all processes.
 int
-getpinfo(void)
+getpinfo(struct pstat *procstats)
 {
-  struct pstat *procstats;
+  // struct pstat *procstats;
 
-  if(argptr(0, (char**)&procstats, sizeof(struct pstat)) < 0) {
-    return -1;
-  }
+  // if(argptr(0, (char**)&procstats, sizeof(struct pstat)) < 0) {
+  //   return -1;
+  // }
 
   for(int i = 0; i < NPROC; i++) {
     if (ptable.proc[i].state == UNUSED) {

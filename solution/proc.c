@@ -356,10 +356,6 @@ scheduler(void)
       // before jumping back to us.
       c->proc = p;
 
-      if (c->proc) {
-        //cprintf("process running: %s\n", c->proc->name);
-      }
-      
       switchuvm(p);
       
       p->state = RUNNING;
@@ -578,11 +574,13 @@ void update_global_values(){
 void stride_scheduler(){
   struct proc *p = NULL;
   struct proc *p_chosen;
-  int lowest_pass_value = INT_MAX;
+  int lowest_pass_value;
   struct cpu *c = mycpu();
   c->proc = 0;
 
   for(;;){
+    lowest_pass_value = INT_MAX;
+
     // Enable interrupts on this processor.
     sti();
 

@@ -626,10 +626,6 @@ settickets(int n)
 {
   struct proc *curproc = myproc();
 
-  // if(argint(0, &n) < 0) {
-  //   return -1;
-  // }
-
   // If a process sets a value lower than 1, we set the 
   // number of tickets to default = 8. If a process sets
   // a value higher than 1<<5, we set the number of
@@ -651,12 +647,6 @@ settickets(int n)
 int
 getpinfo(struct pstat *procstats)
 {
-  // struct pstat *procstats;
-
-  // if(argptr(0, (char**)&procstats, sizeof(struct pstat)) < 0) {
-  //   return -1;
-  // }
-
   for(int i = 0; i < NPROC; i++) {
     if (ptable.proc[i].state == UNUSED) {
       procstats->inuse[i] = 0;
@@ -667,6 +657,7 @@ getpinfo(struct pstat *procstats)
     procstats->pid[i] = ptable.proc[i].pid;
     procstats->pass[i] = ptable.proc[i].pass;
     procstats->remain[i] = ptable.proc[i].remain;
+    procstats->stride[i] = ptable.proc[i].stride;
     procstats->rtime[i] = ptable.proc[i].totalruntime;
   }
 

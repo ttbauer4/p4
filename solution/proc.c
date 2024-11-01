@@ -12,7 +12,7 @@
 
 int global_tickets;
 int global_stride;
-int global_pass;
+int global_pass = 0;
 
 struct {
   struct spinlock lock;
@@ -97,8 +97,9 @@ found:
   p->pid = nextpid++;
   p->tickets = 8;
   p->stride = STRIDE1 / p->tickets;
-  p->pass = 0;
-  p->remain = 0;
+  p->pass = global_pass;
+  //cprintf("name: %s\npid: %d\npass: %d\n", p->name, p->pid, p->pass);
+  p->remain = p->stride;
   p->totalruntime= 0;
 
   release(&ptable.lock);
@@ -455,6 +456,7 @@ sleep(void *chan, struct spinlock *lk)
   }
   // Go to sleep.
   p->remain = p->pass - global_pass; // Added Calculation for remain
+  //cprintf("pid: %d\nremain: %d\n", p->pid, p->remain);
   p->chan = chan;
   p->state = SLEEPING;
 
@@ -562,6 +564,9 @@ void update_global_ticket(){
       tickets += p->tickets;
     }
   }
+  if (tickets != global_tickets) {
+    cprintf("tickets: %d\nglobal_tickets: %d\nglobal_stride: %d\nglobal pass: %d\n", tickets, global_tickets, global_stride, global_pass);
+  }
   global_tickets = tickets;
 }
 
@@ -569,6 +574,7 @@ void update_global_values(){
   update_global_ticket();
   global_stride = STRIDE1/global_tickets;
   global_pass = global_pass + global_stride;
+  myproc()->totalruntime++;
 }
 
 void stride_scheduler(){
@@ -606,6 +612,7 @@ void stride_scheduler(){
     if(p!=NULL){
       c->proc = p;
       switchuvm(p);
+      p->pass += p->stride;
       p->state = RUNNING;
 
       swtch(&(c->scheduler), p->context);
@@ -630,15 +637,15 @@ settickets(int n)
   // number of tickets to default = 8. If a process sets
   // a value higher than 1<<5, we set the number of
   // tickets to 1<<5.
-  if(n > 1<<5) {
-    n = 1<<5;
+  if(n > (1<<5)) {
+    n = (1<<5);
   } else if (n < 1) {
     n = 8;
   }
   curproc->tickets = n;
   curproc->remain = curproc->remain*((STRIDE1/n)/curproc->stride);
   curproc->stride = STRIDE1/n;
-  curproc->pass += curproc->stride + global_pass;
+  curproc->pass = curproc->remain + global_pass;
 
   return 0;
 }

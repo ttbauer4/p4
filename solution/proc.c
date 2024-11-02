@@ -520,9 +520,10 @@ kill(int pid)
     if(p->pid == pid){
       p->killed = 1;
       // Wake process from sleep if necessary.
-      if(p->state == SLEEPING)
+      if(p->state == SLEEPING) {
         p->state = RUNNABLE;
         p->pass = global_pass + p->remain;
+      }
       release(&ptable.lock);
       return 0;
     }
@@ -577,20 +578,27 @@ void update_global_ticket(){
     }
   }
   if (tickets != global_tickets) {
-    cprintf("tickets: %d\nglobal_tickets: %d\nglobal_stride: %d\nglobal pass: %d\n", tickets, global_tickets, global_stride, global_pass);
+    //cprintf("tickets: %d\nglobal_tickets: %d\nglobal_stride: %d\nglobal pass: %d\n", tickets, global_tickets, global_stride, global_pass);
   }
   global_tickets = tickets;
 }
 
 void update_global_values(){
-  update_global_ticket();
+  int tickets = 0;
+  struct proc *p;
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if (p->state == RUNNING) {
+      p->totalruntime++;
+      tickets += p->tickets;
+    } else if (p->state == RUNNABLE) {
+      tickets += p->tickets;
+    }
+  }
+  global_tickets = tickets;
   if (global_tickets > 0) {
     global_stride = STRIDE1/global_tickets;
   }
   global_pass = global_pass + global_stride;
-  if (myproc()->state == RUNNING) {
-    myproc()->totalruntime++;
-  }
 }
 
 void stride_scheduler(){
@@ -673,6 +681,7 @@ settickets(int n)
 int
 getpinfo(struct pstat *procstats)
 {
+  acquire(&ptable.lock);
   for(int i = 0; i < NPROC; i++) {
     if (ptable.proc[i].state == UNUSED) {
       procstats->inuse[i] = 0;
@@ -686,6 +695,7 @@ getpinfo(struct pstat *procstats)
     procstats->stride[i] = ptable.proc[i].stride;
     procstats->rtime[i] = ptable.proc[i].totalruntime;
   }
+  release(&ptable.lock);
 
   return 0;
 }

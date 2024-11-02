@@ -57,7 +57,7 @@ trap(struct trapframe *tf)
     lapiceoi();
     if(myproc()){
       update_global_values();
-      myproc()->pass += myproc()->stride;
+      //myproc()->pass += myproc()->stride;
     }
     break;
   case T_IRQ0 + IRQ_IDE:

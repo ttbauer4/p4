@@ -10,8 +10,8 @@
 #include <stdio.h>
 #include <limits.h>
 
-int global_tickets;
-int global_stride;
+int global_tickets = 0;
+int global_stride = 0;
 int global_pass = 0;
 
 struct {
@@ -78,7 +78,7 @@ myproc(void) {
 // state required to run in the kernel.
 // Otherwise return 0.
 static struct proc*
-allocproc(void)
+allocproc(int n)
 {
   struct proc *p;
   char *sp;
@@ -95,7 +95,16 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
-  p->tickets = 8;
+  // If a process sets a value lower than 1, we set the 
+  // number of tickets to default = 8. If a process sets
+  // a value higher than 1<<5, we set the number of
+  // tickets to 1<<5.
+  if (n > (1<<5)) {
+    n = (1<<5);
+  } else if (n < 1) {
+    n = 8;
+  }
+  p->tickets = n;
   p->stride = STRIDE1 / p->tickets;
   p->pass = global_pass;
   //cprintf("name: %s\npid: %d\npass: %d\n", p->name, p->pid, p->pass);
@@ -136,7 +145,7 @@ userinit(void)
   struct proc *p;
   extern char _binary_initcode_start[], _binary_initcode_size[];
 
-  p = allocproc();
+  p = allocproc(0);
   
   initproc = p;
   if((p->pgdir = setupkvm()) == 0)
@@ -162,6 +171,7 @@ userinit(void)
   acquire(&ptable.lock);
 
   p->state = RUNNABLE;
+  p->pass = global_pass + p->remain;
 
   release(&ptable.lock);
 }
@@ -198,7 +208,7 @@ fork(void)
   struct proc *curproc = myproc();
 
   // Allocate process.
-  if((np = allocproc()) == 0){
+  if((np = allocproc(0)) == 0){
     return -1;
   }
 
@@ -228,6 +238,7 @@ fork(void)
   acquire(&ptable.lock);
 
   np->state = RUNNABLE;
+  np->pass = global_pass + np->remain;
 
   release(&ptable.lock);
 
@@ -511,6 +522,7 @@ kill(int pid)
       // Wake process from sleep if necessary.
       if(p->state == SLEEPING)
         p->state = RUNNABLE;
+        p->pass = global_pass + p->remain;
       release(&ptable.lock);
       return 0;
     }
@@ -572,9 +584,13 @@ void update_global_ticket(){
 
 void update_global_values(){
   update_global_ticket();
-  global_stride = STRIDE1/global_tickets;
+  if (global_tickets > 0) {
+    global_stride = STRIDE1/global_tickets;
+  }
   global_pass = global_pass + global_stride;
-  myproc()->totalruntime++;
+  if (myproc()->state == RUNNING) {
+    myproc()->totalruntime++;
+  }
 }
 
 void stride_scheduler(){
@@ -633,11 +649,13 @@ settickets(int n)
 {
   struct proc *curproc = myproc();
 
+  acquire(&ptable.lock);
+  curproc->remain = curproc->pass - global_pass;
   // If a process sets a value lower than 1, we set the 
   // number of tickets to default = 8. If a process sets
   // a value higher than 1<<5, we set the number of
   // tickets to 1<<5.
-  if(n > (1<<5)) {
+  if (n > (1<<5)) {
     n = (1<<5);
   } else if (n < 1) {
     n = 8;
@@ -647,6 +665,7 @@ settickets(int n)
   curproc->stride = STRIDE1/n;
   curproc->pass = curproc->remain + global_pass;
 
+  release(&ptable.lock);
   return 0;
 }
 

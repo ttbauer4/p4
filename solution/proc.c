@@ -7,9 +7,12 @@
 #include "proc.h"
 #include "spinlock.h"
 #include "pstat.h"
-#include <stdio.h>
+#include <stddef.h>
 #include <limits.h>
 
+#define STRIDE1 (1<<10)
+
+// global scheduler variables
 int global_tickets = 0;
 int global_stride = 0;
 int global_pass = 0;
@@ -95,20 +98,16 @@ allocproc(int n)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
-  // If a process sets a value lower than 1, we set the 
-  // number of tickets to default = 8. If a process sets
-  // a value higher than 1<<5, we set the number of
-  // tickets to 1<<5.
   if (n > (1<<5)) {
-    n = (1<<5);
+    p->tickets = (1<<5);
   } else if (n < 1) {
-    n = 8;
+    p->tickets = 8;
+  } else {
+    p->tickets = n;
   }
-  p->tickets = n;
   p->stride = STRIDE1 / p->tickets;
-  p->pass = global_pass;
-  //cprintf("name: %s\npid: %d\npass: %d\n", p->name, p->pid, p->pass);
   p->remain = p->stride;
+  p->pass = global_pass;
   p->totalruntime= 0;
 
   release(&ptable.lock);
@@ -381,7 +380,6 @@ scheduler(void)
     }
     release(&ptable.lock);
   }
-  //error
   #endif
 }
 
@@ -493,8 +491,8 @@ wakeup1(void *chan)
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if(p->state == SLEEPING && p->chan == chan){
-      p->pass = global_pass + p->remain; // Calculate pass value to be ahead of global pass by remain.
       p->state = RUNNABLE;
+      p->pass = global_pass + p->remain; // calculate pass value to be ahead of global pass by remain
     }
 }
 
@@ -569,20 +567,7 @@ procdump(void)
   }
 }
 
-void update_global_ticket(){
-  int tickets = 0;
-  struct proc *p;
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    if(p->state == RUNNABLE || p->state == RUNNING){
-      tickets += p->tickets;
-    }
-  }
-  if (tickets != global_tickets) {
-    //cprintf("tickets: %d\nglobal_tickets: %d\nglobal_stride: %d\nglobal pass: %d\n", tickets, global_tickets, global_stride, global_pass);
-  }
-  global_tickets = tickets;
-}
-
+// update global scheduler variables on every tick
 void update_global_values(){
   int tickets = 0;
   struct proc *p;
@@ -595,10 +580,10 @@ void update_global_values(){
     }
   }
   global_tickets = tickets;
-  if (global_tickets > 0) {
+  if (global_tickets > 0) { // also implies some process ran for the last tick, so we update global pass
     global_stride = STRIDE1/global_tickets;
+    global_pass = global_pass + global_stride;
   }
-  global_pass = global_pass + global_stride;
 }
 
 void stride_scheduler(){
@@ -609,13 +594,13 @@ void stride_scheduler(){
   c->proc = 0;
 
   for(;;){
-    lowest_pass_value = INT_MAX;
-
     // Enable interrupts on this processor.
     sti();
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
+    lowest_pass_value = INT_MAX;
+    p = NULL;
     for(p_chosen = ptable.proc; p_chosen < &ptable.proc[NPROC]; p_chosen++){
       if(p_chosen->state == RUNNABLE && p_chosen->pass <= lowest_pass_value){
         // Update lowest_pass_value
@@ -636,7 +621,6 @@ void stride_scheduler(){
     if(p!=NULL){
       c->proc = p;
       switchuvm(p);
-      p->pass += p->stride;
       p->state = RUNNING;
 
       swtch(&(c->scheduler), p->context);
@@ -645,9 +629,10 @@ void stride_scheduler(){
       // Process is done running for now.
       // It should have changed its p->state before coming back.
       c->proc = 0;
-      
-      release(&ptable.lock);
+      p->pass += p->stride;
     }
+    
+    release(&ptable.lock);
   }
 }
 

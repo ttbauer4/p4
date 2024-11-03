@@ -1,9 +1,3 @@
-#define STRIDE1 1024
-
-extern int global_tickets;
-extern int global_stride;
-extern int global_pass;
-
 // Per-CPU state
 struct cpu {
   uchar apicid;                // Local APIC ID
@@ -67,9 +61,3 @@ struct proc {
 //   original data and bss
 //   fixed-size stack
 //   expandable heap
-
-void update_global_values();
-void stride_scheduler(void) __attribute__((noreturn));
-void update_global_ticket();
-//int getpinfo();
-//int settickets();

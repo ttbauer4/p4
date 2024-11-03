@@ -108,7 +108,7 @@ sys_getpinfo(void)
 {
    struct pstat *procstats;
 
-  if(argptr(0, (char**)&procstats, sizeof(struct pstat)) < 0) {
+  if(argptr(0, (void*)&procstats, sizeof(procstats)) < 0) {
     return -1;
   }
   return getpinfo(procstats);

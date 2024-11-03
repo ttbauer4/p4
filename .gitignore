@@ -4,3 +4,7 @@
 *.d
 bootblock
 bootblock.asm
+test_*
+_test_*
+Makefile.test
+tests/*
